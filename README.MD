@@ -19,3 +19,13 @@ Nazywam ten skrypt **microblog.py** i definiuję go jako pojedynczą linię, kt�
 Aby nie wykonywać tego za każdym razem instaluję pakiet `pip install python-dotenv` i tworzę plik **.flaskenv** w którym
 ustawiam zmienne środowiskowe.
 
+### 2. TEMPLATES
+> W Flask szablony są zapisywane jako osobne pliki, przechowywane w folderze szablonów templates, wewnątrz pakietu app. 
+
+1. W katalogu app tworzę katalog **templates**, w którym będą przechowywane szablony
+
+2. W **templates** robię **index.html**
+
+3. W **routes.py** renderuję szablon **index.html** za pomocą funkcji **render_template()**
+
+4. Dodaję szablon bazowy **base.html** który dziedziczę w **index.html**
