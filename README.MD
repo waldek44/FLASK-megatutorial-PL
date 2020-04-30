@@ -212,7 +212,7 @@ Dodaję klasę Post w **app/models.py**
 
 <hr>
 
-###### 8 
+###### 8.
 
 Generuję nową migrację bazy danych dla Post
 ```
@@ -225,7 +225,7 @@ flask db upgrade
 
 <hr>
 
-###### 9
+###### 9.
 Ponieważ aplikacja nie ma jeszcze żadnej logiki bazy danych, pobawmy się z bazą danych w interpreterze Pythona
 ```
 flask shell
@@ -288,9 +288,161 @@ db.session.commit()
 
 <hr>
 
-###### 10
+###### 10.
 Konfiguruję powłokę shell za pomocą funkcji w **mikroblog.py**
 > Polecenie **flask shell** uruchomi interpreter Pythona w kontekście aplikacji. Polecenie to uruchamia powłokę Python i
 > wstępnie importuje instancję aplikacji **app**. Zaletą powłoki **flask shell** nie jest to, że app jest wstępnie 
 > importowana, tylko, że można skonfigurować "kontekst powłoki", który jest listą innych symboli do importu wstępnego.
 
+## 5. USERS LOGINS
+
+###### 1.
+Ok, Połączę formularz logowania z bazą danych.
+> Jednym z pakietów, który implementuje hashowanie hasłem jest **Werkzeug**, które być może widzieliśmy w wynikach pip 
+> podczas instalowania Flask, ponieważ jest to jedna z głównych zależności. Werkzeug jest już zainstalowany w twoim środowisku wirtualnym. 
+
+Cała logika haszowania hasła może być zaimplementowana w **app/models.py** jako dwie nowe metody w modelu User:  
+**set_password(self, password)** i **check_password(self, password)**  
+Dzięki zastosowaniu tych dwóch metod obiekt klasy User może teraz bezpiecznie weryfikować hasła bez konieczności przechowywania oryginalnych haseł.  
+
+<hr>
+
+###### 2.
+Rozszerzenie Flask o nazwie **Flask-Login** zarządza stanem zalogowania użytkownika, dzięki czemu na przykład użytkownicy 
+mogą logować się do aplikacji, a następnie nawigować do różnych stron, gdy aplikacja "pamięta", że użytkownik jest zalogowany. 
+Zapewnia także funkcję "zapamiętaj mnie", pozwalającą użytkownikom pozostać zalogowanym nawet po zamknięciu okna przeglądarki.
+```
+pip install flask-login
+```
+
+<hr>
+
+###### 3.
+
+**Flask-Login** musi zostać utworzony i zainicjowany zaraz po wystąpieniu aplikacji w **app/__ init__.py**.
+
+<hr>
+
+###### 4.
+
+Flask-Login działa z modelem użytkownika aplikacji User i oczekuje, że zostaną w nim zaimplementowane określone właściwości i metody.
+
+Cztery wymagane elementy są wymienione poniżej:  
+**is_authenticated**: właściwość o wartości True, jeśli użytkownik ma prawidłowe poświadczenia lub False w przeciwnym razie.  
+**is_active**: właściwość, która ma wartość True, jeśli konto użytkownika jest aktywne lub False w przeciwnym razie.  
+**is_anonymous**: właściwość False dla zwykłych użytkowników i True dla specjalnego, anonimowego użytkownika.  
+**get_id ()**: metoda, która zwraca unikalny identyfikator dla użytkownika jako string.  
+
+Mogę łatwo wdrożyć te cztery elementy, ale ponieważ implementacje są dość ogólne, Flask-Login udostępnia klasę mixin o nazwie **UserMixin**, 
+która zawiera ogólne implementacje, które są odpowiednie dla większości klas modeli użytkowników. 
+Dodaję więc klasę **UserMixin** w **app/models.py**
+
+<hr>
+
+###### 5.
+Rozszerzenie **Flask-Login** oczekuje, że aplikacja skonfiguruje funkcję ładującą użytkownika, którą można wywołać w celu 
+załadowania użytkownika z danym identyfikatorem. Dlatego dodaję funkcję **load_user(id)** w module **app/models.py**
+
+> Program ładujący użytkownika jest rejestrowany przez Flask-Login za pomocą dekoratora **@login.user_loader**. 
+>Identyfikator, który Flask-Login przekazuje do funkcji jako argument, będzie ciągiem znaków, więc bazy danych, 
+>które używają liczbowych identyfikatorów, muszą przekonwertować ciąg na liczbę całkowitą, jak widać powyżej.
+
+<hr>
+
+###### 6.
+Teraz, gdy aplikacja ma dostęp do bazy danych użytkowników i wie, jak generować i weryfikować hashe hasła mogę 
+zaimplementować logikę funkcji logowania użytkownika w **app/routes.py**
+
+<hr>
+
+###### 7.
+Muszę zaoferować użytkownikom opcję wylogowania się z aplikacji. Można to zrobić za pomocą funkcji **logout_user( )** w **app/routes.py**.
+
+Mogę spowodować, że link **Login** na pasku nawigacyjnym automatycznie przełączy się na link **logout** po zalogowaniu użytkownika. 
+Można to zrobić warunkowo w szablonie **base.html** przy pomocy if oraz właściwości **is_anonymous**.
+> **is_anonymous** jest jednym z atrybutów, które Flask-Login dodaje do obiektów użytkowników za pośrednictwem klasy UserMixin. 
+> Wyrażenie **current_user.is_anonymous** będzie miało wartość True tylko wtedy, gdy użytkownik nie jest zalogowany.
+
+<hr>
+
+###### 8.
+Wymaganie zalogowania.  
+> Flask-Login posiada bardzo przydatną funkcję, która zmusza użytkowników do zalogowania się, zanim będą mogli obejrzeć określone strony aplikacji.
+> Jeśli użytkownik, który nie jest zalogowany, spróbuje wyświetlić chronioną stronę, Flask-Login automatycznie przekieruje użytkownika 
+> do formularza logowania i przekieruje z powrotem na stronę, którą użytkownik chciał zobaczyć po zakończeniu procesu logowania.
+
+W **app/__ init__.py** określam jaka funkcja widoku obsługuje logowanie.
+
+Flask-Login chroni funkcję widoku przed anonimowymi użytkownikami za pomocą dekoratora o nazwie **@login_required**, 
+implementuję go pod dekoratorem **@app.route('/')** w pliku **app/routes.py**
+
+<hr>
+
+###### 9.
+
+Implementuję przekierowanie z udanego logowania na stronę, do której użytkownik chciał uzyskać dostęp.
+> Gdy użytkownik, który nie jest zalogowany, uzyskuje dostęp do funkcji widoku chronionej za pomocą @login_required , 
+> dekorator przekieruje go do strony logowania, ale w tym przekierowaniu będzie zawierać dodatkowe informacje, 
+> aby aplikacja mogła następnie powrócić do pierwszej strony.
+
+Dlatego w funkcji logowania w **app/routes.py** dodaję to przekierowanie. Wtedy użytkownik po poprawnym zalogowaniu 
+przejdzie do strony którą atakował zanim przekierowało go na /login
+
+<hr>
+
+###### 10.
+WYŚWIETLENIE ZALOGOWANEGO UŻYTKOWNIKA W SZABLONACH.
+
+Aplikacja ma teraz prawdziwych użytkowników, więc mogę teraz usunąć fałszywego użytkownika i rozpocząć pracę z prawdziwymi użytkownikami. 
+Zamiast fałszywego użytkownika mogę użyć current_user w szablonie **app/templates/index.html** i usunąć zmienną user z **app/routes.py**  
+
+Dodaję też jednego usera
+```
+u = User(username='susan', email='susan@example.com')
+u.set_password('susan')
+db.session.add(u)
+db.session.commit()
+```
+
+<hr>
+
+###### 11.
+
+REJESTRACJA UŻYTKOWNIKA - tworzę formularz rejestracyjny.
+
+Najpierw robię klasę formularza w **app/forms.py**
+
+> Dodałem również dwie metody do tej klasy o nazwie **validate_username( )** i **validate_email( )**.  
+> Gdy dodasz dowolne metody, które pasują do wzorca **validate_ <nazwa_pola>**, WTForms bierze je jako niestandardowe 
+> weryfikatory i wywołuje je oprócz walidatorów giełdowych. W tym przypadku chcę się upewnić, że nazwa użytkownika i 
+> adres e-mail wprowadzone przez użytkownika nie znajdują się już w bazie danych, więc te dwie metody powodują zapytania 
+> do bazy danych, oczekując, że nie będzie żadnych wyników. W przypadku wyniku występuje błąd sprawdzania poprawności 
+> poprzez podniesienie błędu ValidationError. Komunikatem zawartym jako argument w wyjątku będzie komunikat wyświetlany 
+> obok pola, aby użytkownik mógł go zobaczyć.
+
+
+<hr>
+
+###### 12.
+
+Robię szablon HTML do rejestrowania w pliku **app/templates/register.html**
+
+<hr>
+
+###### 13.
+
+Dodaję link do rejestracji w szablonie logowania **app/templates/login.html**
+
+<hr>
+
+###### 14.
+
+Na koniec muszę napisać funkcję widoku, która będzie obsługiwać rejestracje użytkowników w **app/route.py**
+
+<hr>
+
+###### 14.
+Instaluję email_validator dla pola walidavji Email dodanego w **forms.py**
+```
+pip install email_validator
+```

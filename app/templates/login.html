@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
+    <p>Nowy użytkownik? <a href="{{ url_for('register') }}">Przejdź tutaj aby założyć konto!</a></p>
     <h1>Zaloguj się</h1>
     <form action="" method="post" novalidate>
         <!-- Argument szablonu form.hidden_tag( ) generuje ukryte pole zawierające token,
