@@ -441,8 +441,119 @@ Na koniec muszę napisać funkcję widoku, która będzie obsługiwać rejestrac
 
 <hr>
 
-###### 14.
+###### 15.
 Instaluję email_validator dla pola walidavji Email dodanego w **forms.py**
 ```
 pip install email_validator
 ```
+
+
+## 6. PROFILE PAGE & AVATARS
+
+###### 1
+Aby utworzyć stronę profilu użytkownika, napiszĘ najpierw nową funkcję widoku **app/routes.py**, która mapuje na adres URL na **/user/<nazwa użytkownika>**
+
+<hr>
+
+###### 2.
+
+Tworzę szablon **app/templates/user.html**
+
+<hr>
+
+###### 3.
+
+Dodaję link do Profilu użytkownika w **app/templates/base.html**
+
+<hr>
+
+###### 4.
+
+Korzystam z **Gravatar** aby dodać awatara użytkownikowi
+
+Ponieważ awatary są powiązane z użytkownikami, sensowne jest dodanie logiki, która generuje adresy URL awatarów do modelu użytkownika w **app/models.py**
+
+<hr>
+
+###### 5.
+
+Następnym krokiem jest wstawienie obrazów awatara do szablonu profilu użytkownika **app/templates/user.html**
+
+<hr>
+
+###### 6. 
+
+**PODTEMPLATKI JINJA2**
+> Zaprojektowałem stronę **user.html**, aby wyświetlała posty napisane przez użytkownika wraz z ich awatarami. 
+> Teraz chcę, aby strona **index.html** wyświetlała również posty o podobnym układzie. Mógłbym po prostu skopiować / wkleić część szablonu, 
+> która dotyczy renderowania postu, ale to naprawdę nie jest idealne, ponieważ później, jeśli zdecyduję się wprowadzić zmiany w tym układzie, 
+> będę musiał pamiętać o zaktualizowaniu obu szablonów.
+
+Zamiast tego utworzę pod-szablon, który renderuje tylko jeden post, a następnie odwołam się do niego zarówno z szablonów **user.html**, jak i **index.html**.
+Na początek mogę utworzyć pod-szablon, używając tylko znaczników HTML dla jednego posta. 
+Nazwę ten szablon **app/templates/_post.html**. Przedrostek **_** to tylko konwencja nazewnictwa, która pomaga mi rozpoznać, które pliki szablonów są pod-szablonami.
+
+Aby wywołać ten pod-szablon w **user.html**, używam instrukcji dołączania (**include**) Jinja2
+
+Strona **index.html** aplikacji nie jest jeszcze tak rozbudowana, więc nie zamierzam jeszcze dodawać tej funkcji.
+
+<hr>
+
+###### 6. 
+
+Rozszerzam profil użytkownika o dodawanie informacji "o mnie" i śledzenie, kiedy ostatni raz użytkownik wszedł na stronę.
+
+Rozszerzam w **app/models.py** tabelę użytkowników **Users** w bazie danych o dwa nowe pola, po czym migruję:
+```
+flask db migrate -m "new fields in user model"
+flask db upgrade
+```
+
+W następnym kroku dodam te dwa nowe pola do szablonu profilu użytkownika **app/templates/user.html**
+
+<hr>
+
+###### 7. 
+
+REJESTROWANIE OSTATNIEJ WIZYTY UŻYTKOWNIKA
+Dodaję funkcję **before_request()** do **app/routes.py**
+
+> Dekorator @before_request firmy Flask rejestruje dekorowaną funkcję, która ma zostać wykonana tuż przed funkcją widoku. 
+> Jest to niezwykle przydatne, ponieważ teraz mogę wstawić kod, który chcę wykonać przed jakąkolwiek funkcją widoku w aplikacji, 
+> i mogę mieć go w jednym miejscu. Implementacja po prostu sprawdza, czy użytkownik bieżący jest zalogowany, i w 
+> takim przypadku ustawia pole last_seen na bieżącą godzinę.
+
+> Ostatnim krokiem jest zatwierdzenie sesji bazy danych, aby powyższa zmiana została zapisana w bazie danych. 
+> Jeśli zastanawiasz się, dlaczego przed zatwierdzeniem **db.session.commit ()** nie ma funkcji **db.session.add ()**, weź pod uwagę,
+> że odwołując się do current_user, Flask-Login wywoła funkcję zwrotną modułu ładującego użytkownika, która uruchomi zapytanie
+> do bazy danych, które wprowadzi docelowego użytkownika sesji bazy danych. Możesz więc ponownie dodać użytkownika w tej funkcji,
+> ale nie jest to konieczne, ponieważ już tam jest.
+
+<hr>
+
+###### 8. 
+
+EDYTOR PROFILU
+> Muszę też dać użytkownikom formularz, w którym mogą wprowadzić informacje o sobie. Formularz pozwoli użytkownikom na zmianę 
+>nazwy użytkownika, a także napisanie o sobie czegoś, co zostanie zapisane w nowym polu **about_me**. 
+
+Dodaję formularz edycji profilu użytkownika w **app/forms.py**
+
+<hr>
+
+###### 9. 
+
+Tworzę szablon renderujący ten formularz **app/templates/edit_profile.html**
+
+<hr>
+
+###### 10. 
+
+I na koniec funkcja widoku w **app/routes.py**, która łączy wszystko razem 
+
+<hr>
+
+###### 11. 
+
+Aby ułatwić użytkownikom dostęp do strony edytora profilu, mogę dodać link na stronie profilu **app/templates/user.html**
+

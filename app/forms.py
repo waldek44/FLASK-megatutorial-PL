@@ -1,11 +1,10 @@
 from flask_wtf import FlaskForm  # klasa podstawowa FlaskForm pakietu Flask-WTF
-from wtforms import StringField, PasswordField, BooleanField, SubmitField  # klasy reprezentujące typy pól
-from wtforms.validators import DataRequired, ValidationError, Email, EqualTo
-
-#  formularz logowania użytkownika, który prosi użytkownika o podanie nazwy użytkownika i hasła
+from wtforms import StringField, PasswordField, BooleanField, TextAreaField, SubmitField  # klasy reprezentujące typy pól
+from wtforms.validators import DataRequired, ValidationError, Email, EqualTo, Length
 from app.models import User
 
 
+#  formularz logowania użytkownika, który prosi użytkownika o podanie nazwy użytkownika i hasła
 class LoginForm(FlaskForm):
     username = StringField('Nazwa użytkownika', validators=[DataRequired()])
     password = PasswordField('Hasło', validators=[DataRequired()])
@@ -33,3 +32,10 @@ class RegistrationForm(FlaskForm):
         user = User.query.filter_by(email=email.data).first()
         if user is not None:
             raise ValidationError('Ten email należy do kogoś innego.')
+
+
+#  formularz edycji profilu użytkownika
+class EditProfileForm(FlaskForm):
+    username = StringField('Użytkownik', validators=[DataRequired()])
+    about_me = TextAreaField('O mnie', validators=[Length(min=0, max=140)])
+    submit = SubmitField('Zatwierdź')
